@@ -18,6 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 package com.solab.iso8583;
 
+import com.solab.iso8583.util.Bcd;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,7 +33,7 @@ import java.util.Map;
  * nor what fields should each different message type have; that is left
  * for the developer, since the different ISO8583 implementations can vary
  * greatly.
- * 
+ *
  * @author Enrique Zamudio
  */
 public class IsoMessage {
@@ -301,6 +303,7 @@ public class IsoMessage {
     		if (etx > -1) {
     			l++;
     		}
+
     		if (lengthBytes == 4) {
                 buf.put((byte)((l & 0xff000000) >> 24));
     		}
@@ -344,13 +347,19 @@ public class IsoMessage {
     /** Writes the message to a memory stream and returns a byte array with the result. */
     public byte[] writeData() {
     	ByteArrayOutputStream bout = new ByteArrayOutputStream();
+
+        //NOTE: TPDU BCD encode, 5 bytes
+        String TPDU = "6000009733";
+        byte[] tBytes = new byte[TPDU.length()/2];
+        Bcd.encode(TPDU, tBytes);
+        bout.write(tBytes, 0, tBytes.length);
+
     	if (isoHeader != null) {
-    		try {
-    			bout.write(isoHeader.getBytes(encoding));
-    		} catch (IOException ex) {
-    			//should never happen, writing to a ByteArrayOutputStream
-    		}
-    	}
+            //NOTE: Header BCD encode, 6 bytes
+            byte[] bytes = new byte[isoHeader.length()/2];
+            Bcd.encode(isoHeader, bytes);
+            bout.write(bytes, 0, bytes.length);
+        }
     	//Message Type
     	if (binary) {
         	bout.write((type & 0xff00) >> 8);
