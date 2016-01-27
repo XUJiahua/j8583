@@ -58,9 +58,10 @@ public final class Bcd {
         int bufpos = 0;
         if (value.length() % 2 == 1) {
             //for odd lengths we encode just the first digit in the first byte
-            buf[0] = (byte)(value.charAt(0) - 48);
-            charpos = 1;
-            bufpos = 1;
+//            buf[0] = (byte)(value.charAt(0) - 48);
+//            charpos = 1;
+//            bufpos = 1;
+            value = value + "0";
         }
         //encode the rest of the string
         while (charpos < value.length()) {
