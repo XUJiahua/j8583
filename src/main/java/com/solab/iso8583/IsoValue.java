@@ -39,12 +39,21 @@ import com.solab.iso8583.util.HexCodec;
  */
 public class IsoValue<T> implements Cloneable {
 
+	private boolean needBcd;
 	private IsoType type;
 	private T value;
 	private CustomField<T> encoder;
 	private int length;
 	private String encoding;
     private TimeZone tz;
+
+	public boolean isNeedBcd() {
+		return needBcd;
+	}
+
+	public void setNeedBcd(boolean needBcd) {
+		this.needBcd = needBcd;
+	}
 
 	public IsoValue(IsoType t, T value) {
 		this(t, value, null);
@@ -364,6 +373,12 @@ public class IsoValue<T> implements Cloneable {
 				}
 			}
 		} else {
+			if (needBcd){
+				byte[] buf = new byte[toString().length()/2 + toString().length() % 2];
+				Bcd.encode(toString(), buf);
+				outs.write(buf);
+				return;
+			}
 			outs.write(encoding == null ? toString().getBytes() : toString().getBytes(encoding));
 		}
 	}

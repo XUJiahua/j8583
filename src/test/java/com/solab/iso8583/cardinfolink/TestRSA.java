@@ -69,7 +69,9 @@ public class TestRSA {
     private byte[] getBytes() {
         IsoMessage req = mf.newMessage(0x800);
         IsoValue<?> v = req.getField(60);
-//        v.setNeedBcd(true);//TODO: error here???
+        if (v !=null){
+            v.setNeedBcd(true);
+        }
 
         // 2 bytes for storing length
         ByteBuffer byteBuffer = req.writeToBuffer(2);
@@ -93,7 +95,7 @@ public class TestRSA {
             try {
                 byte[] bytes2 = getBytes();
                 byte[] bytes = str2Bcd("003C600000973360220000000008000020000000C00012021806323031323132303653706563526F75746531323132303600110000000100100003303033");
-                outputStream.write(bytes, 0, bytes.length);
+                outputStream.write(bytes2, 0, bytes2.length);
 
                 System.out.println(HexCodec.hexEncode(bytes2, 0, bytes2.length));
                 System.out.println(HexCodec.hexEncode(bytes, 0, bytes.length));
