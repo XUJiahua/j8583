@@ -25,7 +25,8 @@ public class TestRSA {
         mf.setUseBinaryMessages(true);
     }
 
-    private byte[] getBytes() {
+    // contain 2 bytes length
+    private byte[] getReqBytesWithLen() {
         IsoMessage req = mf.newMessage(0x800, TPDU);
         IsoValue<?> v = req.getField(60);
         if (v !=null){
@@ -39,9 +40,9 @@ public class TestRSA {
 
     @Test
     public void testRSA() throws IOException, ParseException {
-        byte[] request = getBytes(); // contain 2 bytes length, 5 bytes TPDU
+        byte[] request = getReqBytesWithLen();
         System.out.println(HexCodec.hexEncode(request, 0, request.length));
-        byte[] response = NetUtil.callServer(request); // contain 2 bytes length, 5 bytes TPDU
+        byte[] response = NetUtil.callServer(request); // 5 bytes TPDU
         //TODO: parse 0x810
         System.out.println(HexCodec.hexEncode(response, 0, response.length));
 

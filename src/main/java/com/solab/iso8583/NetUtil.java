@@ -1,5 +1,7 @@
 package com.solab.iso8583;
 
+import com.solab.iso8583.util.HexCodec;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -27,15 +29,19 @@ public class NetUtil {
             try {
                 outputStream.write(request, 0, request.length);
 
-                byte[] resBytes = new byte[2048];//TODO: 缓冲区2048可能不够
+                byte[] resBytes = new byte[2];
                 int ret = inputStream.read(resBytes);
                 if (ret == -1) {
                     System.out.println("No message returned");
-                    return new byte[0];
+                    return null;
                 } else {
-                    byte[] response = new byte[ret];
-                    System.arraycopy(resBytes, 0, response, 0, ret);
-                    return response;
+                    int length = Integer.parseInt(HexCodec.hexEncode(resBytes, 0, resBytes.length), 16);
+                    resBytes = new byte[length];
+                    ret = inputStream.read(resBytes);
+                    if (ret == length){
+                        return resBytes;
+                    }
+                    return null;
                 }
             } catch (Exception ex) {
                 System.err.println(ex.getMessage());
