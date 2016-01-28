@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.text.ParseException;
 
 public class TestRSA {
     private static String TPDU = "6004010000";
@@ -25,7 +26,7 @@ public class TestRSA {
     }
 
     private byte[] getBytes() {
-        IsoMessage req = mf.newMessage(0x800);
+        IsoMessage req = mf.newMessage(0x800, TPDU);
         IsoValue<?> v = req.getField(60);
         if (v !=null){
             v.setNeedBcd(true);
@@ -37,10 +38,13 @@ public class TestRSA {
     }
 
     @Test
-    public void testRSA() throws IOException {
-        byte[] request = getBytes();
+    public void testRSA() throws IOException, ParseException {
+        byte[] request = getBytes(); // contain 2 bytes length, 5 bytes TPDU
         System.out.println(HexCodec.hexEncode(request, 0, request.length));
-        byte[] response = NetUtil.callServer(request);
+        byte[] response = NetUtil.callServer(request); // contain 2 bytes length, 5 bytes TPDU
+        //TODO: parse 0x810
         System.out.println(HexCodec.hexEncode(response, 0, response.length));
+
+//        IsoMessage rep = mf.parseMessage(response, 6);
     }
 }

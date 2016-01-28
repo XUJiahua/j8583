@@ -40,6 +40,9 @@ public class IsoMessage {
 
 	static final byte[] HEX = new byte[]{ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
+    /** Cardinfolink: Custom field in header */
+    private String tpdu;
+
 	/** The message type. */
     private int type;
     /** Indicates if the message is binary-coded. */
@@ -63,6 +66,14 @@ public class IsoMessage {
     /** Creates a new message with the specified ISO header. This will be prepended to the message. */
     protected IsoMessage(String header) {
     	isoHeader = header;
+    }
+
+    public String getTpdu() {
+        return tpdu;
+    }
+
+    public void setTpdu(String tpdu) {
+        this.tpdu = tpdu;
     }
 
     /** Tells the message to encode its bitmap in binary format, even if the message
@@ -348,11 +359,12 @@ public class IsoMessage {
     public byte[] writeData() {
     	ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
-        //NOTE: TPDU BCD encode, 5 bytes
-        String TPDU = "6000009733";
-        byte[] tBytes = new byte[TPDU.length()/2];
-        Bcd.encode(TPDU, tBytes);
-        bout.write(tBytes, 0, tBytes.length);
+        if (tpdu != null) {
+            //NOTE: TPDU BCD encode, 5 bytes
+            byte[] tBytes = new byte[tpdu.length() / 2];
+            Bcd.encode(tpdu, tBytes);
+            bout.write(tBytes, 0, tBytes.length);
+        }
 
     	if (isoHeader != null) {
             //NOTE: Header BCD encode, 6 bytes

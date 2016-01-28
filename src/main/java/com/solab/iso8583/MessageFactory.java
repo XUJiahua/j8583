@@ -211,14 +211,27 @@ public class MessageFactory<T extends IsoMessage> {
 	 * messages, then the returned message will be written using binary coding.
 	 * @param type The message type, for example 0x200, 0x400, etc. */
 	public T newMessage(int type) {
+		return newMessage(type, null);
+	}
+
+	/**
+	 * 在type基础上,加上cardinfolink定制的tpdu_字段
+	 * @param type
+	 * @param tpdu_
+	 * @return
+	 */
+	public T newMessage(int type, String tpdu_) {
 		T m = createIsoMessage(isoHeaders.get(type));
 		m.setType(type);
+		if (tpdu_ != null){
+			m.setTpdu(tpdu_);
+		}
 		m.setEtx(etx);
 		m.setBinary(useBinary);
 		m.setForceSecondaryBitmap(forceb2);
-        m.setBinaryBitmap(binBitmap);
+		m.setBinaryBitmap(binBitmap);
 		m.setCharacterEncoding(encoding);
-        m.setForceStringEncoding(forceStringEncoding);
+		m.setForceStringEncoding(forceStringEncoding);
 
 		//Copy the values from the template
 		IsoMessage templ = typeTemplates.get(type);
