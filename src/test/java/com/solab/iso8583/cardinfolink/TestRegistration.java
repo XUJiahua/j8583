@@ -14,6 +14,8 @@ import java.util.HashMap;
 public class TestRegistration {
     private final static String TPDU = "6004010000";
     private final static String ISO_HEADER = "602200000000";
+    private final static String TERMINAL_ID = "00000025";
+    private final static String MERCHANT_ID = "100000000000009";
     private MessageFactory<IsoMessage> mf;
 
     @Before
@@ -26,8 +28,8 @@ public class TestRegistration {
         IsoMessage tmpl = new IsoMessage();
         tmpl.setType(0x800);
         tmpl.setValue(11, "021806", IsoType.NUMERIC,6); // Default to BCD
-        tmpl.setValue(41,"20121206", IsoType.ALPHA, 8); // Default to ASCII
-        tmpl.setValue(42,"SpecRoute121206", IsoType.ALPHA, 15); // Default to ASCII
+        tmpl.setValue(41,TERMINAL_ID, IsoType.ALPHA, 8); // Default to ASCII
+        tmpl.setValue(42,MERCHANT_ID, IsoType.ALPHA, 15); // Default to ASCII
         tmpl.setValue(60,"00000001001",IsoType.LLLVAR, 11, EncodingType.VAR_ENCODING_BCD); //BCD
         tmpl.setValue(63,"003",IsoType.LLLVAR,3, EncodingType.VAR_ENCODING_ASCII); //ASCII
 
@@ -49,21 +51,14 @@ public class TestRegistration {
         mf.setParseMap(0x810, pmap);
     }
 
-    // contain 2 bytes length
-    private byte[] getRequestPrefixWithLen() {
-        IsoMessage req = mf.newMessage(0x800, TPDU);
-        // 2 bytes for storing length
-        ByteBuffer byteBuffer = req.writeToBuffer(2);
-
-//        byte[] data = req.writeData();
-//        System.out.println(HexCodec.hexEncode(data, 0, data.length));
-
-        return byteBuffer.array();
-    }
-
     @Test
     public void testRegistration() throws IOException, ParseException {
-        byte[] request = getRequestPrefixWithLen();
+        IsoMessage req = mf.newMessage(0x800, TPDU);
+        // prepend 2 bytes for storing length
+        ByteBuffer byteBuffer = req.writeToBuffer(2);
+//        byte[] data = req.writeData();
+//        System.out.println(HexCodec.hexEncode(data, 0, data.length));
+        byte[] request = byteBuffer.array();
         System.out.println(HexCodec.hexEncode(request, 0, request.length));
         byte[] response = NetUtil.callServer(request); // contains 5 bytes TPDU
         if (response != null) {
