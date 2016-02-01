@@ -25,6 +25,7 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.TimeZone;
 
+import com.solab.iso8583.parse.EncodingType;
 import com.solab.iso8583.util.Bcd;
 import com.solab.iso8583.util.HexCodec;
 
@@ -39,20 +40,21 @@ import com.solab.iso8583.util.HexCodec;
  */
 public class IsoValue<T> implements Cloneable {
 
-	private boolean needBcd;
+	private EncodingType encodingType;
 	private IsoType type;
 	private T value;
 	private CustomField<T> encoder;
+	// 字段长度,并不是在传输报文中所占字节的长度
 	private int length;
 	private String encoding;
     private TimeZone tz;
 
-	public boolean isNeedBcd() {
-		return needBcd;
+	public EncodingType getEncodingType() {
+		return encodingType;
 	}
 
-	public void setNeedBcd(boolean needBcd) {
-		this.needBcd = needBcd;
+	public void setEncodingType(EncodingType encodingType) {
+		this.encodingType = encodingType;
 	}
 
 	public IsoValue(IsoType t, T value) {
@@ -331,12 +333,15 @@ public class IsoValue<T> implements Cloneable {
      * for variable-length fields to be done with the proper character encoding. When false,
      * the length headers are encoded as ASCII; this used to be the only behavior. */
 	public void write(final OutputStream outs, final boolean binary, final boolean forceStringEncoding) throws IOException {
+		// LLVAR LLLVAR LLLLVAR是需要
 		if (type == IsoType.LLLVAR || type == IsoType.LLVAR || type == IsoType.LLLLVAR) {
             writeLengthHeader(length, outs, type, binary, forceStringEncoding);
 		} else if (type == IsoType.LLBIN || type == IsoType.LLLBIN || type == IsoType.LLLLBIN) {
+			//TODO: 还没碰到过
             writeLengthHeader(binary ? length : length*2, outs, type, binary, forceStringEncoding);
-		} else if (binary) {
+		} else {
 			//numeric types in binary are coded like this
+			//NOTE: 数字类型都使用BCD编码,字节数是本身数字长度的一半
 			byte[] buf = null;
 			if (type == IsoType.NUMERIC) {
 				buf = new byte[(length / 2) + (length % 2)];
@@ -353,7 +358,9 @@ public class IsoValue<T> implements Cloneable {
 				return;
 			}
 		}
-		if (binary && (type == IsoType.BINARY || type == IsoType.LLBIN || type == IsoType.LLLBIN || type == IsoType.LLLLBIN)) {
+
+		// TODO: 二进制类型的编码, BINARY类型的解码在这了?
+		if ((type == IsoType.BINARY || type == IsoType.LLBIN || type == IsoType.LLLBIN || type == IsoType.LLLLBIN)) {
 			int missing = 0;
 			if (value instanceof byte[]) {
 				outs.write((byte[])value);
@@ -373,12 +380,14 @@ public class IsoValue<T> implements Cloneable {
 				}
 			}
 		} else {
-			if (needBcd){
+			// BCD
+			if (encodingType == EncodingType.VAR_ENCODING_BCD){
 				byte[] buf = new byte[toString().length()/2 + toString().length() % 2];
 				Bcd.encode(toString(), buf);
 				outs.write(buf);
 				return;
 			}
+			// ASCII
 			outs.write(encoding == null ? toString().getBytes() : toString().getBytes(encoding));
 		}
 	}

@@ -25,11 +25,15 @@ import com.solab.iso8583.CustomField;
 import com.solab.iso8583.IsoType;
 import com.solab.iso8583.IsoValue;
 
+
 /** This class is used to parse a field from a message buffer. There are concrete subclasses for each IsoType.
  * 
  * @author Enrique Zamudio
  */
 public abstract class FieldParseInfo {
+
+	// LLVAR/LLLVAR/LLLLVAR类型的编码方式,每个字段都有自己的定义,不是统一成一个编码形式的
+	protected EncodingType encodingType;
 
 	protected IsoType type;
 	protected final int length;
@@ -49,7 +53,15 @@ public abstract class FieldParseInfo {
 		length = len;
 	}
 
-    /** Specified whether length headers for variable-length fields in text mode should
+	public EncodingType getEncodingType() {
+		return encodingType;
+	}
+
+	public void setEncodingType(EncodingType encodingType) {
+		this.encodingType = encodingType;
+	}
+
+	/** Specified whether length headers for variable-length fields in text mode should
      * be decoded using proper string conversion with the character encoding. Default is false,
      * which means use the old behavior of decoding as ASCII. */
     public void setForceStringDecoding(boolean flag) {

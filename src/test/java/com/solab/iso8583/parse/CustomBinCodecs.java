@@ -60,7 +60,6 @@ public class CustomBinCodecs {
         final LongBcdCodec longCodec = new LongBcdCodec();
         final MessageFactory<IsoMessage> mfact = new MessageFactory<IsoMessage>();
         IsoMessage tmpl = new IsoMessage();
-        tmpl.setBinary(true);
         tmpl.setType(0x200);
         tmpl.setValue(2, 1234567890l, longCodec, type, 0);
         tmpl.setValue(3, b29, bigintCodec, type, 0);
@@ -71,7 +70,7 @@ public class CustomBinCodecs {
         parser.put(2, fieldParser);
         parser.put(3, fieldParser);
         mfact.setParseMap(0x200, parser);
-        mfact.setUseBinaryMessages(true);
+//        mfact.setUseBinaryMessages(true);
         //Test encoding
         tmpl = mfact.newMessage(0x200);
         byte[] buf = tmpl.writeData();

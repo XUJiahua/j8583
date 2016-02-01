@@ -15,4 +15,6 @@
 <!ELEMENT field ( #PCDATA|field )* >
 <!ATTLIST field num NMTOKEN #REQUIRED >
 <!ATTLIST field length NMTOKEN #IMPLIED >
+<!ATTLIST field encoding NMTOKEN #IMPLIED >
 <!ATTLIST field type ( ALPHA | NUMERIC | AMOUNT | DATE10 | DATE4 | DATE_EXP | TIME | LLVAR | LLLVAR | BINARY | LLBIN | LLLBIN | LLLLVAR | LLLLBIN | exclude) #REQUIRED >
+<!ATTLIST field encoding ( BCD | ASCII | BINARY | exclude) #IMPLIED >

@@ -41,21 +41,21 @@ public class TestIssue4 {
         MessageFactory<IsoMessage> mf = new MessageFactory<IsoMessage>();
         ConfigParser.configureFromClasspathConfig(mf, "issue4.xml");
         IsoMessage bm = mf.getMessageTemplate(0x800);
-        bm.setBinaryBitmap(true);
+//        bm.setBinaryBitmap(true);
         final ByteBuffer bb = bm.writeToBuffer(2);
         Assert.assertEquals("Wrong message length for new BIN", 62, bb.array().length);
         Assert.assertEquals(60, bb.getShort());
 
         MessageFactory<IsoMessage> mfp = new MessageFactory<IsoMessage>();
-        mfp.setUseBinaryBitmap(true);
+//        mfp.setUseBinaryBitmap(true);
         ConfigParser.configureFromClasspathConfig(mfp, "issue4.xml");
         byte[] buf2 = new byte[bb.remaining()];
         bb.get(buf2);
         bm = mfp.parseMessage(buf2, 0);
-        Assert.assertTrue("Parsed message should have binary bitmap flag set",
-                bm.isBinaryBitmap());
-        Assert.assertFalse(bm.isBinary());
-        final ByteBuffer bbp = bm.writeToBuffer(2);
+//        Assert.assertTrue("Parsed message should have binary bitmap flag set",
+//                bm.isBinaryBitmap());
+//        Assert.assertFalse(bm.isBinary());
+        ByteBuffer bbp = bm.writeToBuffer(2);
         Assert.assertArrayEquals("Parsed-reencoded BIN differs from original",
                 bb.array(), bbp.array());
     }

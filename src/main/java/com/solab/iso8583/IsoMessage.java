@@ -18,6 +18,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 package com.solab.iso8583;
 
+import com.solab.iso8583.parse.EncodingType;
 import com.solab.iso8583.util.Bcd;
 
 import java.io.ByteArrayOutputStream;
@@ -37,7 +38,6 @@ import java.util.Map;
  * @author Enrique Zamudio
  */
 public class IsoMessage {
-
 	static final byte[] HEX = new byte[]{ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
     /** Cardinfolink: Custom field in header */
@@ -45,8 +45,8 @@ public class IsoMessage {
 
 	/** The message type. */
     private int type;
-    /** Indicates if the message is binary-coded. */
-    private boolean binary;
+//    /** Indicates if the message is binary-coded. */
+//    private boolean binary;
     /** This is where the values are stored. */
     @SuppressWarnings("rawtypes")
 	private IsoValue[] fields = new IsoValue[129];
@@ -55,7 +55,7 @@ public class IsoMessage {
     private int etx = -1;
     /** Flag to enforce secondary bitmap even if empty. */
     private boolean forceb2;
-    private boolean binBitmap;
+//    private boolean binBitmap;
     private boolean forceStringEncoding;
     private String encoding = System.getProperty("file.encoding");
 
@@ -76,17 +76,17 @@ public class IsoMessage {
         this.tpdu = tpdu;
     }
 
-    /** Tells the message to encode its bitmap in binary format, even if the message
-     * itself is encoded as text. This has no effect if the binary flag is set, which means
-     * binary messages will always encode their bitmap in binary format. */
-    public void setBinaryBitmap(boolean flag) {
-        binBitmap = flag;
-    }
-    /** Returns true if the message's bitmap is encoded in binary format, when the message
-     * is encoded as text. Default is false. */
-    public boolean isBinaryBitmap() {
-        return binBitmap;
-    }
+//    /** Tells the message to encode its bitmap in binary format, even if the message
+//     * itself is encoded as text. This has no effect if the binary flag is set, which means
+//     * binary messages will always encode their bitmap in binary format. */
+//    public void setBinaryBitmap(boolean flag) {
+//        binBitmap = flag;
+//    }
+//    /** Returns true if the message's bitmap is encoded in binary format, when the message
+//     * is encoded as text. Default is false. */
+//    public boolean isBinaryBitmap() {
+//        return binBitmap;
+//    }
 
     /** If set, this flag will cause the secondary bitmap to be written even if it's not needed. */
     public void setForceSecondaryBitmap(boolean flag) {
@@ -138,16 +138,16 @@ public class IsoMessage {
     	return type;
     }
 
-    /** Indicates whether the message should be binary. Default is false.
-     * To encode the message as text but the bitmap in binary format, you can set the
-     * binaryBitmap flag. */
-    public void setBinary(boolean flag) {
-    	binary = flag;
-    }
-    /** Returns true if the message is binary coded; default is false. */
-    public boolean isBinary() {
-    	return binary;
-    }
+//    /** Indicates whether the message should be binary. Default is false.
+//     * To encode the message as text but the bitmap in binary format, you can set the
+//     * binaryBitmap flag. */
+//    public void setBinary(boolean flag) {
+//    	binary = flag;
+//    }
+//    /** Returns true if the message is binary coded; default is false. */
+//    public boolean isBinary() {
+//    	return binary;
+//    }
 
     /** Sets the ETX character, which is sent at the end of the message as a terminator.
      * Default is -1, which means no terminator is sent. */
@@ -228,6 +228,51 @@ public class IsoMessage {
     		fields[index] = v;
     	}
     	return this;
+    }
+
+    /**
+     * specify encodingType
+     * @param index
+     * @param value
+     * @param t
+     * @param length
+     * @param encodingType
+     * @return
+     */
+    public IsoMessage setValue(int index, Object value, IsoType t, int length, EncodingType encodingType) {
+        return setValue(index, value, null, t, length, encodingType);
+    }
+
+    /**
+     * specify encodingType
+     * @param index
+     * @param value
+     * @param encoder
+     * @param t
+     * @param length
+     * @param encodingType
+     * @param <T>
+     * @return
+     */
+    public <T> IsoMessage setValue(int index, T value, CustomField<T> encoder, IsoType t, int length, EncodingType encodingType) {
+        if (index < 2 || index > 128) {
+            throw new IndexOutOfBoundsException("Field index must be between 2 and 128");
+        }
+        if (value == null) {
+            fields[index] = null;
+        } else {
+            IsoValue<T> v = null;
+            if (t.needsLength()) {
+                v = new IsoValue<>(t, value, length, encoder);
+                v.setEncodingType(encodingType);
+            } else {
+                v = new IsoValue<>(t, value, encoder);
+                v.setEncodingType(encodingType);
+            }
+            v.setCharacterEncoding(encoding);
+            fields[index] = v;
+        }
+        return this;
     }
 
     /** A convenience method to set new values in fields that already contain values.
@@ -361,83 +406,44 @@ public class IsoMessage {
 
         if (tpdu != null) {
             //NOTE: TPDU BCD encode, 5 bytes
-            byte[] tBytes = new byte[tpdu.length() / 2];
+            byte[] tBytes = new byte[tpdu.length() / 2 + tpdu.length()%2];
             Bcd.encode(tpdu, tBytes);
             bout.write(tBytes, 0, tBytes.length);
         }
 
     	if (isoHeader != null) {
             //NOTE: Header BCD encode, 6 bytes
-            byte[] bytes = new byte[isoHeader.length()/2];
+            byte[] bytes = new byte[isoHeader.length()/2+ isoHeader.length()%2];
             Bcd.encode(isoHeader, bytes);
             bout.write(bytes, 0, bytes.length);
         }
     	//Message Type
-    	if (binary) {
-        	bout.write((type & 0xff00) >> 8);
-        	bout.write(type & 0xff);
-    	} else {
-    		try {
-    			bout.write(String.format("%04x", type).getBytes(encoding));
-    		} catch (IOException ex) {
-    			//should never happen, writing to a ByteArrayOutputStream
-    		}
-    	}
+        bout.write((type & 0xff00) >> 8);
+        bout.write(type & 0xff);
 
     	//Bitmap
         BitSet bs = createBitmapBitSet();
     	//Write bitmap to stream
-    	if (binary || binBitmap) {
-    		int pos = 128;
-    		int b = 0;
-    		for (int i = 0; i < bs.size(); i++) {
-    			if (bs.get(i)) {
-    				b |= pos;
-    			}
-    			pos >>= 1;
-    			if (pos == 0) {
-    				bout.write(b);
-    				pos = 128;
-    				b = 0;
-    			}
-    		}
-    	} else {
-            ByteArrayOutputStream bout2 = null;
-            if (forceStringEncoding) {
-                bout2 = bout;
-                bout = new ByteArrayOutputStream();
+        int pos = 128;
+        int b = 0;
+        for (int i = 0; i < bs.size(); i++) {
+            if (bs.get(i)) {
+                b |= pos;
             }
-            int pos = 0;
-            int lim = bs.size() / 4;
-            for (int i = 0; i < lim; i++) {
-                int nibble = 0;
-                if (bs.get(pos++))
-                    nibble |= 8;
-                if (bs.get(pos++))
-                    nibble |= 4;
-                if (bs.get(pos++))
-                    nibble |= 2;
-                if (bs.get(pos++))
-                    nibble |= 1;
-                bout.write(HEX[nibble]);
+            pos >>= 1;
+            if (pos == 0) {
+                bout.write(b);
+                pos = 128;
+                b = 0;
             }
-            if (forceStringEncoding) {
-                final String _hb = new String(bout.toByteArray());
-                bout = bout2;
-                try {
-                    bout.write(_hb.getBytes(encoding));
-                } catch (IOException ignore) {
-                    //never happen
-                }
-            }
-    	}
+        }
 
     	//Fields
     	for (int i = 2; i < 129; i++) {
     		IsoValue<?> v = fields[i];
     		if (v != null) {
         		try {
-        			v.write(bout, binary, forceStringEncoding);
+        			v.write(bout, true, forceStringEncoding);
         		} catch (IOException ex) {
         			//should never happen, writing to a ByteArrayOutputStream
         		}

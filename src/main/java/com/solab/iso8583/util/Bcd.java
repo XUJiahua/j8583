@@ -19,7 +19,6 @@
 package com.solab.iso8583.util;
 
 import java.math.BigInteger;
-import java.text.ParseException;
 
 /**
  * Routines for Binary Coded Digits.
@@ -57,10 +56,7 @@ public final class Bcd {
         int charpos = 0; //char where we start
         int bufpos = 0;
         if (value.length() % 2 == 1) {
-            //for odd lengths we encode just the first digit in the first byte
-//            buf[0] = (byte)(value.charAt(0) - 48);
-//            charpos = 1;
-//            bufpos = 1;
+            //约定: 对于奇书位长度的数字,服务端默认补0,客户端也是后面补零后编码传输
             value = value + "0";
         }
         //encode the rest of the string
@@ -78,18 +74,44 @@ public final class Bcd {
      * @param length The number of DIGITS (not bytes) to read. */
     public static BigInteger decodeToBigInteger(byte[] buf, int pos, int length)
             throws IndexOutOfBoundsException {
-        char[] digits = new char[length];
+        //约定: 对于奇书位长度的数字,服务端默认补0
+        char[] digits = new char[length+length%2];
         int start = 0;
         int i = pos;
-        if (length % 2 != 0) {
-            digits[start++] = (char)((buf[i] & 0x0f) + 48);
-            i++;
-        }
+
         for (;i < pos + (length / 2) + (length % 2); i++) {
             digits[start++] = (char)(((buf[i] & 0xf0) >> 4) + 48);
             digits[start++] = (char)((buf[i] & 0x0f) + 48);
         }
-        return new BigInteger(new String(digits));
+        if (length%2 == 1 ) {
+            return new BigInteger(new String(digits)).divide(BigInteger.TEN);
+        }else {
+            return new BigInteger(new String(digits));
+        }
     }
 
+    /**
+     * Decodes a BCD-encoded number as a String. (转换为int类型,会不知道前面有多少前置0)
+     * @param buf The byte buffer containing the BCD data.
+     * @param pos The starting position in the buffer.
+     * @param length The number of DIGITS (not bytes) to read.
+     * @return
+     * @throws IndexOutOfBoundsException
+     */
+    public static String decodeToString(byte[] buf, int pos, int length)
+            throws IndexOutOfBoundsException {
+        char[] digits = new char[length+length%2];
+        int start = 0;
+        int i = pos;
+
+        for (;i < pos + (length / 2) + (length % 2); i++) {
+            digits[start++] = (char)(((buf[i] & 0xf0) >> 4) + 48);
+            digits[start++] = (char)((buf[i] & 0x0f) + 48);
+        }
+        if (length%2 == 1 ) {
+            return new String(digits).substring(0, length);
+        }else {
+            return new String(digits);
+        }
+    }
 }

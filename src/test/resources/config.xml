@@ -145,15 +145,22 @@
     <!--<field num="3" type="ALPHA" length="6">123456</field>-->
     <!--<field num="12" type="DATE4">1231</field>-->
     <!--<field num="17" type="DATE4">1231</field>-->
-	<field num="41" type="ALPHA" length="8">00000025</field>
-	<!--<field num="42" type="ALPHA" length="15">100000000000009</field>-->
-	<field num="42" type="ALPHA" length="15">SpecRoute121206</field>
-	<field num="60" type="LLLVAR" length="11">00000001352</field>
+	<field num="41" type="ALPHA" length="8"/>
+	<field num="42" type="ALPHA" length="15"/>
+	<field num="60" type="LLLVAR" length="11"/>
 </parse>
 
 <parse type="0810" extends="0800">
-    <field num="17" type="exclude"/>
+	<field num="11" type="NUMERIC" length="6"/>
+	<field num="12" type="NUMERIC" length="6"/>
+	<field num="13" type="NUMERIC" length="4"/>
+	<field num="32" type="LLVAR" encoding="BCD" />
+	<field num="37" type="ALPHA" length="12"/>
     <field num="39" type="ALPHA" length="2"/>
+	<field num="41" type="ALPHA" length="8"/>
+	<field num="42" type="ALPHA" length="15"/>
+	<field num="60" type="LLLVAR" encoding="BCD"/>
+	<field num="62" type="LLLVAR" encoding="BINARY"/>
 </parse>
 
 <parse type="0201">

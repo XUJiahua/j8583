@@ -42,7 +42,7 @@ public class TestParsing {
 
 	@Test(expected=ParseException.class)
 	public void testShortBin() throws ParseException, UnsupportedEncodingException {
-		mf.setUseBinaryMessages(true);
+//		mf.setUseBinaryMessages(true);
 		mf.parseMessage(new byte[10], 1);
 	}
 
@@ -53,7 +53,7 @@ public class TestParsing {
 
 	@Test(expected=ParseException.class)
 	public void testShortSecondaryBitmapBin() throws ParseException, UnsupportedEncodingException {
-		mf.setUseBinaryMessages(true);
+//		mf.setUseBinaryMessages(true);
 		mf.parseMessage(new byte[]{ 2, 0, (byte)128, 0, 0, 0, 0, 0, 0, 0 }, 0);
 	}
 
@@ -64,7 +64,7 @@ public class TestParsing {
 
 	@Test(expected=ParseException.class)
 	public void testNoFieldsBin() throws ParseException, UnsupportedEncodingException {
-		mf.setUseBinaryMessages(true);
+//		mf.setUseBinaryMessages(true);
 		mf.parseMessage(new byte[]{2, 0x10, (byte)0xB2, 0x3A, (byte)0x80, 1, 0x2E, (byte)0xA0, (byte)0x80, 0x18, 0, 0, 0, 0, 0x14, 0, 0, 4}, 0);
 	}
 
@@ -75,7 +75,7 @@ public class TestParsing {
 
 	@Test(expected=ParseException.class)
 	public void testIncompleteFixedFieldBin() throws ParseException, UnsupportedEncodingException {
-		mf.setUseBinaryMessages(true);
+//		mf.setUseBinaryMessages(true);
 		mf.parseMessage(new byte[]{2, 0x10, (byte)0xB2, 0x3A, (byte)0x80, 1, 0x2E, (byte)0xA0, (byte)0x80, 0x18, 0, 0, 0, 0, 0x14, 0, 0, 4, 0x65, 0}, 0);
 	}
 
@@ -86,7 +86,7 @@ public class TestParsing {
 
 	@Test(expected=ParseException.class)
 	public void testIncompleteVarFieldHeaderBin()  throws ParseException, UnsupportedEncodingException {
-		mf.setUseBinaryMessages(true);
+//		mf.setUseBinaryMessages(true);
 		mf.parseMessage(new byte[]{2, 0x10, (byte)0xB2, 0x3A, (byte)0x80, 1, 0x2E, (byte)0xA0, (byte)0x80, 0x18, 0, 0, 0, 0, 0x14, 0, 0, 4, 0x65, 0, 0, 0, 0, 0, 0, 0x30, 0, 0x04, 0x28, 0x13, 0x05, 0x47, 0x46, (byte)0x87, 0x71, 0x12, 0x59, 0x46, 0x04, 0x28, 0x04, 0x28, 0x08, 0x11}, 0);
 	}
 
@@ -97,7 +97,7 @@ public class TestParsing {
 
 	@Test(expected=ParseException.class)
 	public void testIncompleteVarFieldDataBin()  throws ParseException, UnsupportedEncodingException {
-		mf.setUseBinaryMessages(true);
+//		mf.setUseBinaryMessages(true);
 		mf.parseMessage(new byte[]{2, 0x10, (byte)0xB2, 0x3A, (byte)0x80, 1, 0x2E, (byte)0xA0, (byte)0x80, 0x18, 0, 0, 0, 0, 0x14, 0, 0, 4, 0x65, 0, 0, 0, 0, 0, 0, 0x30, 0, 0x04, 0x28, 0x13, 0x05, 0x47, 0x46, (byte)0x87, 0x71, 0x12, 0x59, 0x46, 0x04, 0x28, 0x04, 0x28, 0x08, 0x11, 0x05, 0x12, 0x34}, 0);
 	}
 

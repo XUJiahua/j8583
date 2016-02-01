@@ -23,7 +23,7 @@ public class TestEmptyLvars {
     @BeforeClass
     public static void setupSpec() throws IOException {
         txtfact.setConfigPath("issue38.xml");
-        binfact.setUseBinaryMessages(true);
+//        binfact.setUseBinaryMessages(true);
         binfact.setConfigPath("issue38.xml");
     }
 

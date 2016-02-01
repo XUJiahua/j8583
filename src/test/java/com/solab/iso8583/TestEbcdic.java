@@ -78,7 +78,7 @@ public class TestEbcdic {
     public void testMessageType() throws UnsupportedEncodingException, ParseException {
         final IsoMessage msg = new IsoMessage();
         msg.setType(0x1100);
-        msg.setBinaryBitmap(true);
+//        msg.setBinaryBitmap(true);
         msg.setCharacterEncoding("Cp1047");
         final byte[] enc = msg.writeData();
         Assert.assertEquals(12, enc.length);
@@ -89,17 +89,17 @@ public class TestEbcdic {
         MessageFactory<IsoMessage> mf = new MessageFactory<IsoMessage>();
         HashMap<Integer, FieldParseInfo> pmap = new HashMap<Integer, FieldParseInfo>();
         mf.setForceStringEncoding(true);
-        mf.setUseBinaryBitmap(true);
+//        mf.setUseBinaryBitmap(true);
         mf.setCharacterEncoding("Cp1047");
         mf.setParseMap(0x1100, pmap);
         IsoMessage m2 = mf.parseMessage(enc, 0);
         Assert.assertEquals(msg.getType(), m2.getType());
         //Now with text bitmap
-        msg.setBinaryBitmap(false);
+//        msg.setBinaryBitmap(false);
         msg.setForceStringEncoding(true);
         final byte[] enc2 = msg.writeData();
         Assert.assertEquals(20, enc2.length);
-        mf.setUseBinaryBitmap(false);
+//        mf.setUseBinaryBitmap(false);
         m2 = mf.parseMessage(enc2, 0);
         Assert.assertEquals(msg.getType(), m2.getType());
     }
@@ -157,7 +157,7 @@ public class TestEbcdic {
     public void testMessage() throws ParseException, UnsupportedEncodingException {
         final byte[] trama = HexCodec.hexDecode("f1f8f1f42030010002000000f0f0f0f0f0f0f0f1f5f9f5f5f1f3f0f6f1f2f1f1f2f9f0f8f8f3f1f8f0f0");
         MessageFactory<IsoMessage> mfact = new MessageFactory<IsoMessage>();
-        mfact.setUseBinaryBitmap(true);
+//        mfact.setUseBinaryBitmap(true);
         HashMap<Integer, FieldParseInfo> pinfo = new HashMap<Integer, FieldParseInfo>();
         pinfo.put(3, new AlphaParseInfo(6));
         pinfo.put(11, new AlphaParseInfo(6));

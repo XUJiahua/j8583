@@ -24,6 +24,7 @@ import java.text.ParseException;
 import com.solab.iso8583.CustomField;
 import com.solab.iso8583.IsoType;
 import com.solab.iso8583.IsoValue;
+import com.solab.iso8583.util.Bcd;
 
 /** This class is used to parse fields of type LLVAR.
  * 
@@ -100,8 +101,13 @@ public class LlvarParseInfo extends FieldParseInfo {
                     "Insufficient data for bin LLVAR field %d, pos %d", field, pos), pos);
 		}
 		if (custom == null) {
-			return new IsoValue<>(type, new String(buf, pos + 1, len,
-					getCharacterEncoding()), null);
+			//NOTE: 二进制形式的使用BCD编码,TODO:有的LL字段是ASCII类型的
+			//TODO: 使用BCD编码,虽然有8位digits,但只消耗一半的字节数
+			IsoValue isoValue = new IsoValue<>(type, Bcd.decodeToString(buf, pos+1, len));
+			isoValue.setEncodingType(EncodingType.VAR_ENCODING_BCD);
+			return isoValue;
+//			return new IsoValue<>(type, new String(buf, pos + 1, len,
+//					getCharacterEncoding()), null);
 		} else {
             T dec = custom.decodeField(new String(buf, pos + 1, len, getCharacterEncoding()));
             return dec == null ? new IsoValue<>(type,

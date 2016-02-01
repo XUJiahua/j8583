@@ -24,6 +24,8 @@ import java.text.ParseException;
 import java.util.*;
 
 import com.solab.iso8583.parse.DateTimeParseInfo;
+import com.solab.iso8583.parse.EncodingType;
+import com.solab.iso8583.util.Bcd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,13 +66,13 @@ public class MessageFactory<T extends IsoMessage> {
 	/** Indicates if the current date should be set on new messages (field 7). */
 	private boolean setDate;
 	/** Indicates if the factory should create binary messages and also parse binary messages. */
-	private boolean useBinary;
+//	private boolean useBinary;
 	private int etx = -1;
 	/** Flag to specify if missing fields should be ignored as long as they're at
 	 * the end of the message. */
 	private boolean ignoreLast;
 	private boolean forceb2;
-    private boolean binBitmap;
+//    private boolean binBitmap;
     private boolean forceStringEncoding;
 	private String encoding = System.getProperty("file.encoding");
 
@@ -88,16 +90,16 @@ public class MessageFactory<T extends IsoMessage> {
         return forceStringEncoding;
     }
 
-    /** Tells the factory to create messages that encode their bitmaps in binary format
-     * even when they're encoded as text. Has no effect on binary messages. */
-    public void setUseBinaryBitmap(boolean flag) {
-        binBitmap = flag;
-    }
-    /** Returns true if the factory is set to create and parse bitmaps in binary format
-     * when the messages are encoded as text. */
-    public boolean isUseBinaryBitmap() {
-        return binBitmap;
-    }
+//    /** Tells the factory to create messages that encode their bitmaps in binary format
+//     * even when they're encoded as text. Has no effect on binary messages. */
+//    public void setUseBinaryBitmap(boolean flag) {
+//        binBitmap = flag;
+//    }
+//    /** Returns true if the factory is set to create and parse bitmaps in binary format
+//     * when the messages are encoded as text. */
+//    public boolean isUseBinaryBitmap() {
+//        return binBitmap;
+//    }
 
 	/** Sets the character encoding used for parsing ALPHA, LLVAR and LLLVAR fields. */
 	public void setCharacterEncoding(String value) {
@@ -185,16 +187,16 @@ public class MessageFactory<T extends IsoMessage> {
         setForceStringEncoding(forceStringEncoding);
 	}
 
-	/** Tells the receiver to create and parse binary messages if the flag is true.
-	 * Default is false, that is, create and parse ASCII messages. */
-	public void setUseBinaryMessages(boolean flag) {
-		useBinary = flag;
-	}
-	/** Returns true is the factory is set to create and parse binary messages,
-	 * false if it uses ASCII messages. Default is false. */
-	public boolean getUseBinaryMessages() {
-		return useBinary;
-	}
+//	/** Tells the receiver to create and parse binary messages if the flag is true.
+//	 * Default is false, that is, create and parse ASCII messages. */
+//	public void setUseBinaryMessages(boolean flag) {
+//		useBinary = flag;
+//	}
+//	/** Returns true is the factory is set to create and parse binary messages,
+//	 * false if it uses ASCII messages. Default is false. */
+//	public boolean getUseBinaryMessages() {
+//		return useBinary;
+//	}
 
 	/** Sets the ETX character to be sent at the end of the message. This is optional and the
 	 * default is -1, which means nothing should be sent as terminator.
@@ -227,9 +229,7 @@ public class MessageFactory<T extends IsoMessage> {
 			m.setTpdu(tpdu_);
 		}
 		m.setEtx(etx);
-		m.setBinary(useBinary);
 		m.setForceSecondaryBitmap(forceb2);
-		m.setBinaryBitmap(binBitmap);
 		m.setCharacterEncoding(encoding);
 		m.setForceStringEncoding(forceStringEncoding);
 
@@ -260,8 +260,6 @@ public class MessageFactory<T extends IsoMessage> {
 	public T createResponse(T request) {
 		T resp = createIsoMessage(isoHeaders.get(request.getType() + 16));
 		resp.setCharacterEncoding(request.getCharacterEncoding());
-		resp.setBinary(request.isBinary());
-        resp.setBinaryBitmap(request.isBinaryBitmap());
 		resp.setType(request.getType() + 16);
 		resp.setEtx(etx);
 		resp.setForceSecondaryBitmap(forceb2);
@@ -299,6 +297,9 @@ public class MessageFactory<T extends IsoMessage> {
                 field, messageType);
     }
 
+	public T parseMessage(byte[] buf) throws UnsupportedEncodingException, ParseException {
+		return parseMessage(buf, 11);
+	}
 	/** Creates a new message instance from the buffer, which must contain a valid ISO8583
 	 * message. If the factory is set to use binary messages then it will try to parse
 	 * a binary message.
@@ -307,119 +308,54 @@ public class MessageFactory<T extends IsoMessage> {
 	 * and the rest of the message must come. */
 	public T parseMessage(byte[] buf, int isoHeaderLength)
 	throws ParseException, UnsupportedEncodingException {
-		final int minlength = isoHeaderLength+(useBinary?2:4)+(binBitmap||useBinary ? 8:16);
+		isoHeaderLength = 5 + 6;
+		// header长度: 5+6 bytes, type长度: 2 bytes, Bitmap长度: 8 bytes
+		final int minlength = isoHeaderLength + 2 + 8;
 		if (buf.length < minlength) {
 			throw new ParseException("Insufficient buffer length, needs to be at least " + minlength, 0);
 		}
-		final T m = createIsoMessage(isoHeaderLength > 0 ?
-				new String(buf, 0, isoHeaderLength, encoding) : null);
+
+		//TPDU和isoHeader是使用BCD编码的
+		String tpdu = Bcd.decodeToString(buf, 0, 10); // 10个数字
+		String isoHeader = Bcd.decodeToString(buf, tpdu.length()/2 + tpdu.length()%2, 12); // 12个数字
+
+		final T m = createIsoMessage(isoHeader);
+		m.setTpdu(tpdu);
 		m.setCharacterEncoding(encoding);
+
+		// Parse type
 		final int type;
-		if (useBinary) {
-			type = ((buf[isoHeaderLength] & 0xff) << 8) | (buf[isoHeaderLength + 1] & 0xff);
-        } else if (forceStringEncoding) {
-            type = Integer.parseInt(new String(buf, isoHeaderLength, 4, encoding), 16);
-		} else {
-			type = ((buf[isoHeaderLength] - 48) << 12)
-			| ((buf[isoHeaderLength + 1] - 48) << 8)
-			| ((buf[isoHeaderLength + 2] - 48) << 4)
-			| (buf[isoHeaderLength + 3] - 48);
-		}
+		type = ((buf[isoHeaderLength] & 0xff) << 8) | (buf[isoHeaderLength + 1] & 0xff);
 		m.setType(type);
-		//Parse the bitmap (primary first)
+		// Parse the bitmap (primary first)
 		final BitSet bs = new BitSet(64);
 		int pos = 0;
-		if (useBinary || binBitmap) {
-            final int bitmapStart = isoHeaderLength + (useBinary ? 2 : 4);
-			for (int i = bitmapStart; i < 8+bitmapStart; i++) {
+		// NOTE: bitmap固定使用二进制的
+		final int bitmapStart = isoHeaderLength + 2;
+		for (int i = bitmapStart; i < 8+bitmapStart; i++) {
+			int bit = 128;
+			for (int b = 0; b < 8; b++) {
+				bs.set(pos++, (buf[i] & bit) != 0);
+				bit >>= 1;
+			}
+		}
+		//Check for secondary bitmap and parse if necessary
+		if (bs.get(0)) {
+			if (buf.length < minlength + 8) {
+				throw new ParseException("Insufficient length for secondary bitmap", minlength);
+			}
+			for (int i = 8+bitmapStart; i < 16+bitmapStart; i++) {
 				int bit = 128;
 				for (int b = 0; b < 8; b++) {
 					bs.set(pos++, (buf[i] & bit) != 0);
 					bit >>= 1;
 				}
 			}
-			//Check for secondary bitmap and parse if necessary
-			if (bs.get(0)) {
-				if (buf.length < minlength + 8) {
-					throw new ParseException("Insufficient length for secondary bitmap", minlength);
-				}
-				for (int i = 8+bitmapStart; i < 16+bitmapStart; i++) {
-					int bit = 128;
-					for (int b = 0; b < 8; b++) {
-						bs.set(pos++, (buf[i] & bit) != 0);
-						bit >>= 1;
-					}
-				}
-				pos = minlength + 8;
-			} else {
-				pos = minlength;
-			}
+			pos = minlength + 8;
 		} else {
-			//ASCII parsing
-			try {
-                final byte[] bitmapBuffer;
-                if (forceStringEncoding) {
-                    byte[] _bb = new String(buf, isoHeaderLength+4, 16, encoding).getBytes();
-                    bitmapBuffer = new byte[36+isoHeaderLength];
-                    System.arraycopy(_bb, 0, bitmapBuffer, 4+isoHeaderLength, 16);
-                } else {
-                    bitmapBuffer = buf;
-                }
-                for (int i = isoHeaderLength + 4; i < isoHeaderLength + 20; i++) {
-                    if (bitmapBuffer[i] >= '0' && bitmapBuffer[i] <= '9') {
-                        bs.set(pos++, ((bitmapBuffer[i] - 48) & 8) > 0);
-                        bs.set(pos++, ((bitmapBuffer[i] - 48) & 4) > 0);
-                        bs.set(pos++, ((bitmapBuffer[i] - 48) & 2) > 0);
-                        bs.set(pos++, ((bitmapBuffer[i] - 48) & 1) > 0);
-                    } else if (bitmapBuffer[i] >= 'A' && bitmapBuffer[i] <= 'F') {
-                        bs.set(pos++, ((bitmapBuffer[i] - 55) & 8) > 0);
-                        bs.set(pos++, ((bitmapBuffer[i] - 55) & 4) > 0);
-                        bs.set(pos++, ((bitmapBuffer[i] - 55) & 2) > 0);
-                        bs.set(pos++, ((bitmapBuffer[i] - 55) & 1) > 0);
-                    } else if (bitmapBuffer[i] >= 'a' && bitmapBuffer[i] <= 'f') {
-                        bs.set(pos++, ((bitmapBuffer[i] - 87) & 8) > 0);
-                        bs.set(pos++, ((bitmapBuffer[i] - 87) & 4) > 0);
-                        bs.set(pos++, ((bitmapBuffer[i] - 87) & 2) > 0);
-                        bs.set(pos++, ((bitmapBuffer[i] - 87) & 1) > 0);
-                    }
-                }
-				//Check for secondary bitmap and parse it if necessary
-				if (bs.get(0)) {
-					if (buf.length < minlength + 16) {
-						throw new ParseException("Insufficient length for secondary bitmap", minlength);
-					}
-                    if (forceStringEncoding) {
-                        byte[] _bb = new String(buf, isoHeaderLength+20, 16, encoding).getBytes();
-                        System.arraycopy(_bb, 0, bitmapBuffer, 20+isoHeaderLength, 16);
-                    }
-					for (int i = isoHeaderLength + 20; i < isoHeaderLength + 36; i++) {
-						if (bitmapBuffer[i] >= '0' && bitmapBuffer[i] <= '9') {
-							bs.set(pos++, ((bitmapBuffer[i] - 48) & 8) > 0);
-							bs.set(pos++, ((bitmapBuffer[i] - 48) & 4) > 0);
-							bs.set(pos++, ((bitmapBuffer[i] - 48) & 2) > 0);
-							bs.set(pos++, ((bitmapBuffer[i] - 48) & 1) > 0);
-						} else if (bitmapBuffer[i] >= 'A' && bitmapBuffer[i] <= 'F') {
-							bs.set(pos++, ((bitmapBuffer[i] - 55) & 8) > 0);
-							bs.set(pos++, ((bitmapBuffer[i] - 55) & 4) > 0);
-							bs.set(pos++, ((bitmapBuffer[i] - 55) & 2) > 0);
-							bs.set(pos++, ((bitmapBuffer[i] - 55) & 1) > 0);
-						} else if (bitmapBuffer[i] >= 'a' && bitmapBuffer[i] <= 'f') {
-							bs.set(pos++, ((bitmapBuffer[i] - 87) & 8) > 0);
-							bs.set(pos++, ((bitmapBuffer[i] - 87) & 4) > 0);
-							bs.set(pos++, ((bitmapBuffer[i] - 87) & 2) > 0);
-							bs.set(pos++, ((bitmapBuffer[i] - 87) & 1) > 0);
-						}
-					}
-					pos = 16 + minlength;
-				} else {
-					pos = minlength;
-				}
-			} catch (NumberFormatException ex) {
-				ParseException _e = new ParseException("Invalid ISO8583 bitmap", pos);
-				_e.initCause(ex);
-				throw _e;
-			}
+			pos = minlength;
 		}
+
 		//Parse each field
 		Map<Integer, FieldParseInfo> parseGuide = parseMap.get(type);
 		List<Integer> index = parseOrder.get(type);
@@ -443,71 +379,60 @@ public class MessageFactory<T extends IsoMessage> {
 			throw new ParseException("ISO8583 MessageFactory cannot parse fields", 0);
 		}
 		//Now we parse each field
-		if (useBinary) {
-			for (Integer i : index) {
-				FieldParseInfo fpi = parseGuide.get(i);
-				if (bs.get(i - 1)) {
-					if (ignoreLast && pos >= buf.length && i.intValue() == index.get(index.size() -1)) {
-						log.warn("Field {} is not really in the message even though it's in the bitmap", i);
-						bs.clear(i - 1);
-					} else {
-                        CustomField<?> decoder = fpi.getDecoder();
-                        if (decoder == null) {
-                            decoder = getCustomField(i);
-                        }
-						IsoValue<?> val = fpi.parseBinary(i, buf, pos, decoder);
-						m.setField(i, val);
-						if (val != null) {
-							if (val.getType() == IsoType.NUMERIC || val.getType() == IsoType.DATE10
-									|| val.getType() == IsoType.DATE4 || val.getType() == IsoType.DATE12
-									|| val.getType() == IsoType.DATE_EXP
-									|| val.getType() == IsoType.AMOUNT
-									|| val.getType() == IsoType.TIME) {
-								pos += (val.getLength() / 2) + (val.getLength() % 2);
+		for (Integer i : index) {
+			FieldParseInfo fpi = parseGuide.get(i);
+			if (bs.get(i - 1)) {
+				if (ignoreLast && pos >= buf.length && i.intValue() == index.get(index.size() - 1)) {
+					log.warn("Field {} is not really in the message even though it's in the bitmap", i);
+					bs.clear(i - 1);
+				} else {
+					CustomField<?> decoder = fpi.getDecoder();
+					if (decoder == null) {
+						decoder = getCustomField(i);
+					}
+					//TODO: 这里可以二进制解析,也可以ASCII解析
+					EncodingType encodingType = fpi.getEncodingType();
+
+					IsoValue<?> val = fpi.parseBinary(i, buf, pos, decoder);
+					m.setField(i, val);
+					if (val != null) {
+						//NOTE: 数值类型占位一半,如果是奇数位,再加1
+						if (val.getType() == IsoType.NUMERIC || val.getType() == IsoType.DATE10
+								|| val.getType() == IsoType.DATE4 || val.getType() == IsoType.DATE12
+								|| val.getType() == IsoType.DATE_EXP
+								|| val.getType() == IsoType.AMOUNT
+								|| val.getType() == IsoType.TIME) {
+							pos += (val.getLength() / 2) + (val.getLength() % 2);
+						} else {
+							//NOTE: 其它就是内容的长度
+							if (val.getEncodingType() == EncodingType.VAR_ENCODING_BCD) {
+								pos += val.getLength() / 2 + val.getLength() % 2;
 							} else {
 								pos += val.getLength();
 							}
-							if (val.getType() == IsoType.LLVAR || val.getType() == IsoType.LLBIN) {
-								pos++;
-							} else if (val.getType() == IsoType.LLLVAR
-									|| val.getType() == IsoType.LLLBIN
-                                    || val.getType() == IsoType.LLLLVAR
-									|| val.getType() == IsoType.LLLLBIN) {
-                                pos += 2;
-                            }
+							// TODO: 二进制呢
+						}
+
+						//LL类型需要额外偏移位置
+						//NOTE: LL最大99,一个byte够表示 LLL最大999,LLLL最大9999,需要两个字节位表示
+						if (val.getType() == IsoType.LLVAR || val.getType() == IsoType.LLBIN) {
+							pos++;
+						} else if (val.getType() == IsoType.LLLVAR
+								|| val.getType() == IsoType.LLLBIN
+								|| val.getType() == IsoType.LLLLVAR
+								|| val.getType() == IsoType.LLLLBIN) {
+							pos += 2;
 						}
 					}
-				}
-			}
-		} else {
-			for (Integer i : index) {
-				FieldParseInfo fpi = parseGuide.get(i);
-				if (bs.get(i - 1)) {
-					if (ignoreLast && pos >= buf.length && i.intValue() == index.get(index.size() -1)) {
-						log.warn("Field {} is not really in the message even though it's in the bitmap", i);
-						bs.clear(i - 1);
-					} else {
-                        CustomField<?> decoder = fpi.getDecoder();
-                        if (decoder == null) {
-                            decoder = getCustomField(i);
-                        }
-						IsoValue<?> val = fpi.parse(i, buf, pos, decoder);
-						m.setField(i, val);
-						//To get the correct next position, we need to get the number of bytes, not chars
-						pos += val.toString().getBytes(fpi.getCharacterEncoding()).length;
-						if (val.getType() == IsoType.LLVAR || val.getType() == IsoType.LLBIN) {
-							pos += 2;
-						} else if (val.getType() == IsoType.LLLVAR || val.getType() == IsoType.LLLBIN) {
-							pos += 3;
-						} else if (val.getType() == IsoType.LLLLVAR || val.getType() == IsoType.LLLLBIN) {
-                            pos += 4;
-                        }
-					}
+
+					//ASCII解码
+//						IsoValue<?> val = fpi.parse(i, buf, pos, decoder);
+//						m.setField(i, val);
+//						//To get the correct next position, we need to get the number of bytes, not chars
+//						pos += val.toString().getBytes(fpi.getCharacterEncoding()).length;
 				}
 			}
 		}
-		m.setBinary(useBinary);
-        m.setBinaryBitmap(binBitmap);
 		return m;
 	}
 

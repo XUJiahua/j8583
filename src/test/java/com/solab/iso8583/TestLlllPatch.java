@@ -57,7 +57,7 @@ public class TestLlllPatch {
         String LLLLVar = makeLLLLVar(LENGTH);
         IsoMessage m = mfact.newMessage(0x100);
         m.setValue(2, LLLLVar, IsoType.LLLLVAR, 0);
-        m.setBinary(true);
+//        m.setBinary(true);
 
         // write
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -76,7 +76,7 @@ public class TestLlllPatch {
         bin.close();
 
         // parse
-        mfact.setUseBinaryMessages(true);
+//        mfact.setUseBinaryMessages(true);
         m = mfact.parseMessage(buf, mfact.getIsoHeader(0x100).length());
         Assert.assertNotNull(m);
         Assert.assertEquals(LLLLVar, m.getObjectValue(2));

@@ -3,6 +3,7 @@ package com.solab.iso8583.parse;
 import com.solab.iso8583.CustomField;
 import com.solab.iso8583.IsoType;
 import com.solab.iso8583.IsoValue;
+import com.solab.iso8583.util.Bcd;
 
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
@@ -85,8 +86,12 @@ public class LlllvarParseInfo  extends FieldParseInfo {
                     "Insufficient data for bin LLLLVAR field %d, pos %d", field, pos), pos);
 		}
 		if (custom == null) {
-			return new IsoValue<>(type, new String(buf, pos + 2, len,
-					getCharacterEncoding()), null);
+			//TODO: 也可能是ASCII码的,issue
+			IsoValue isoValue = new IsoValue<>(type, Bcd.decodeToString(buf, pos + 2, len));
+			isoValue.setEncodingType(EncodingType.VAR_ENCODING_BCD);
+			return isoValue;
+//			return new IsoValue<>(type, new String(buf, pos + 2, len,
+//					getCharacterEncoding()), null);
 		} else {
             T dec = custom.decodeField(new String(buf, pos + 2, len, getCharacterEncoding()));
             return dec == null ? new IsoValue<>(type,
