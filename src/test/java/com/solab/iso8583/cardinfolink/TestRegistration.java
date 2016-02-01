@@ -49,6 +49,31 @@ public class TestRegistration {
         pmap.put(62, new LllbinParseInfo());
 
         mf.setParseMap(0x810, pmap);
+
+
+        mf.setIsoHeader(0x820, ISO_HEADER);
+
+        IsoMessage tmpl2 = new IsoMessage();
+        tmpl2.setType(0x820);
+        tmpl2.setValue(11, "021806", IsoType.NUMERIC,6); // Default to BCD
+        tmpl2.setValue(41,TERMINAL_ID, IsoType.ALPHA, 8); // Default to ASCII
+        tmpl2.setValue(42,MERCHANT_ID, IsoType.ALPHA, 15); // Default to ASCII
+        tmpl2.setValue(60,"00000001002",IsoType.LLLVAR, 11, EncodingType.VAR_ENCODING_BCD); //BCD
+
+        mf.addMessageTemplate(tmpl2);
+
+        HashMap<Integer, FieldParseInfo> pmap2 = new HashMap<>();
+        pmap2.put(11, new NumericParseInfo(6));
+        pmap2.put(12, new NumericParseInfo(6));
+        pmap2.put(13, new NumericParseInfo(4));
+        pmap2.put(32, new LlvarParseInfo()); // BCD
+        pmap2.put(37, new AlphaParseInfo(12));
+        pmap2.put(39, new AlphaParseInfo(2));
+        pmap2.put(41, new AlphaParseInfo(8));
+        pmap2.put(42, new AlphaParseInfo(15));
+        pmap2.put(60, new LllvarParseInfo()); // BCD
+
+        mf.setParseMap(0x830, pmap2);
     }
 
     @Test
@@ -63,8 +88,23 @@ public class TestRegistration {
         byte[] response = NetUtil.callServer(request); // contains 5 bytes TPDU
         if (response != null) {
             System.out.println(HexCodec.hexEncode(response, 0, response.length));
+            // header长度: TPDU 5 bytes, isoHeader 6 bytes
+            IsoMessage rep = mf.parseMessage(response);
         }
-        // header长度: TPDU 5 bytes, isoHeader 6 bytes
-        IsoMessage rep = mf.parseMessage(response);
+    }
+
+    @Test
+    public void testRegistrationOff() throws IOException, ParseException {
+        //TODO: move TPDU to setting phase
+        IsoMessage req = mf.newMessage(0x820, TPDU);
+        ByteBuffer byteBuffer = req.writeToBuffer(2);
+        byte[] request = byteBuffer.array();
+        System.out.println(HexCodec.hexEncode(request, 0, request.length));
+        byte[] response = NetUtil.callServer(request); // contains 5 bytes TPDU
+        if (response != null) {
+            System.out.println(HexCodec.hexEncode(response, 0, response.length));
+            // header长度: TPDU 5 bytes, isoHeader 6 bytes
+            IsoMessage rep = mf.parseMessage(response);
+        }
     }
 }
